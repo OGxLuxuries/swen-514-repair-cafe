@@ -1,0 +1,23 @@
+project_name = "fixit-lab"
+environment  = "dev"
+aws_region   = "us-east-1"
+
+# Optional explicit bucket names (must be globally unique if set)
+# website_bucket_name = "fixit-lab-dev-frontend-123456789012"
+# uploads_bucket_name = "fixit-lab-dev-uploads-123456789012"
+
+# Optional SNS email subscriber (must confirm subscription)
+# status_notification_email = "team@example.com"
+
+bedrock_model_id   = "anthropic.claude-3-haiku-20240307-v1:0"
+enable_comprehend = false
+
+allowed_cors_origins = [
+  "http://localhost:5173"
+]
+
+log_retention_days = 14
+
+# tags = {
+#   Owner = "repair-cafe"
+# }
