@@ -24,3 +24,9 @@ provider "aws" {
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
 }
+
+module "frontend" {
+  source = "./modules/frontend"
+
+  name_prefix = local.name_prefix
+}
