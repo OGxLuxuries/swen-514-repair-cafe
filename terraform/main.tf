@@ -49,3 +49,9 @@ module "auth" {
 
   name_prefix = local.name_prefix
 }
+
+module "notifications" {
+  source = "./modules/notifications"
+
+  name_prefix = local.name_prefix
+}

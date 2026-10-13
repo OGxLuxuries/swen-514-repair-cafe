@@ -32,3 +32,8 @@ output "cognito_issuer_url" {
   description = "Cognito JWT issuer URL for API authentication."
   value       = module.auth.issuer_url
 }
+
+output "notifications_topic_arn" {
+  description = "SNS topic for requester repair-status notifications."
+  value       = module.notifications.topic_arn
+}

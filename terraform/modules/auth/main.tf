@@ -54,11 +54,8 @@ resource "aws_cognito_user_pool_client" "frontend" {
   name         = "${var.name_prefix}-frontend"
   user_pool_id = aws_cognito_user_pool.users.id
 
-  # A browser app cannot keep a client secret private.
   generate_secret = false
 
-  # The frontend will use its own login form with a Cognito SRP-capable SDK.
-  # This does not configure Cognito's hosted login pages or redirect URLs.
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH"
@@ -81,6 +78,4 @@ resource "aws_cognito_user_pool_client" "frontend" {
     refresh_token = "days"
   }
 
-  # Frontend logout must clear local tokens and revoke the session. Offline JWT
-  # validation (including API Gateway) can accept issued tokens until expiry.
 }
