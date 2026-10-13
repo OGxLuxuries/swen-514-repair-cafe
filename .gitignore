@@ -1,0 +1,17 @@
+# Terraform downloads and local state can contain sensitive values.
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+
+# Keep local deployment values and credentials out of Git.
+*.tfvars
+*.tfvars.json
+.env
+.env.*
+!.env.example
+
+# Commit .terraform.lock.hcl once terraform init generates it.
+.DS_Store
