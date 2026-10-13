@@ -30,3 +30,10 @@ module "frontend" {
 
   name_prefix = local.name_prefix
 }
+
+module "uploads" {
+  source = "./modules/uploads"
+
+  name_prefix     = local.name_prefix
+  allowed_origins = [module.frontend.website_url]
+}

@@ -8,7 +8,7 @@ terraform {
 
 resource "aws_s3_bucket" "frontend" {
   # Terraform adds a suffix to make the bucket name globally unique.
-  bucket_prefix = "${var.name_prefix}-web-"
+  bucket_prefix = "${var.name_prefix}-web"
   force_destroy = false
 }
 
