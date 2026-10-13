@@ -12,3 +12,8 @@ output "uploads_bucket_name" {
   description = "Private S3 bucket for uploaded photos and documents."
   value       = module.uploads.bucket_name
 }
+
+output "database_table_names" {
+  description = "DynamoDB tables for users, repair requests, and related records."
+  value       = module.database.table_names
+}

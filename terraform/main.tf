@@ -37,3 +37,9 @@ module "uploads" {
   name_prefix     = local.name_prefix
   allowed_origins = [module.frontend.website_url]
 }
+
+module "database" {
+  source = "./modules/database"
+
+  name_prefix = local.name_prefix
+}
