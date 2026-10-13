@@ -37,3 +37,13 @@ output "notifications_topic_arn" {
   description = "SNS topic for requester repair-status notifications."
   value       = module.notifications.topic_arn
 }
+
+output "backend_function_name" {
+  description = "Name of the Python backend Lambda function."
+  value       = module.lambda_function.function_name
+}
+
+output "backend_log_group_name" {
+  description = "CloudWatch log group for backend logs."
+  value       = module.lambda_function.log_group_name
+}

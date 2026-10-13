@@ -35,3 +35,22 @@ variable "tags" {
   default     = {}
   nullable    = false
 }
+
+variable "lambda_zip_path" {
+  description = "Path to the built Python backend ZIP, relative to terraform/ or absolute. The ZIP must exist before planning."
+  type        = string
+  nullable    = false
+}
+
+variable "lambda_handler" {
+  description = "Python module.function entry point inside the backend ZIP."
+  type        = string
+  default     = "app.lambda_handler"
+  nullable    = false
+}
+
+variable "bedrock_model_arn" {
+  description = "ARN of the selected foundation model in aws_region; it must support direct on-demand invocation and be accessible in the AWS account."
+  type        = string
+  nullable    = false
+}
