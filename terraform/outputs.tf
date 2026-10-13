@@ -47,3 +47,8 @@ output "backend_log_group_name" {
   description = "CloudWatch log group for backend logs."
   value       = module.lambda_function.log_group_name
 }
+
+output "api_url" {
+  description = "HTTPS base URL for the frontend to call the repair API."
+  value       = module.api.api_url
+}

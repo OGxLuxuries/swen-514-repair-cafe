@@ -82,3 +82,14 @@ module "lambda_function" {
     COGNITO_ISSUER_URL      = module.auth.issuer_url
   }
 }
+
+module "api" {
+  source = "./modules/api"
+
+  name_prefix          = local.name_prefix
+  lambda_function_name = module.lambda_function.function_name
+  lambda_invoke_arn    = module.lambda_function.invoke_arn
+  cognito_issuer_url   = module.auth.issuer_url
+  cognito_client_id    = module.auth.client_id
+  allowed_origins      = [module.frontend.website_url]
+}
