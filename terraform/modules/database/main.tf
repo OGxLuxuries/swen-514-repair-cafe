@@ -40,7 +40,6 @@ resource "aws_dynamodb_table" "requests" {
     type = "S"
   }
 
-  # Use a consistent UTC ISO 8601 format so string ordering follows time.
   attribute {
     name = "created_at"
     type = "S"

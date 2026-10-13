@@ -17,3 +17,18 @@ output "database_table_names" {
   description = "DynamoDB tables for users, repair requests, and related records."
   value       = module.database.table_names
 }
+
+output "cognito_user_pool_id" {
+  description = "Cognito user pool ID for frontend authentication."
+  value       = module.auth.user_pool_id
+}
+
+output "cognito_client_id" {
+  description = "Public Cognito app client ID for the frontend."
+  value       = module.auth.client_id
+}
+
+output "cognito_issuer_url" {
+  description = "Cognito JWT issuer URL for API authentication."
+  value       = module.auth.issuer_url
+}
