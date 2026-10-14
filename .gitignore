@@ -1,0 +1,31 @@
+# Terraform state and plans
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.plan
+crash.log
+crash.*.log
+
+# Local Terraform variable and backend overrides (keep examples only)
+*.auto.tfvars
+terraform.tfvars
+backend.hcl
+backend.tfvars
+
+# Provider lock file can be committed if desired; currently ignored for portability in bootstrap
+.terraform.lock.hcl
+
+# Generated artifacts
+infra/health_check.zip
+
+# Credentials and environment files
+*.pem
+*.key
+*.env
+*.env.*
+credentials
+
+# Python cache
+__pycache__/
+*.pyc
