@@ -1,0 +1,17 @@
+aws_region   = "us-east-1"
+project_name = "repair-cafe"
+environment  = "dev"
+
+tags = {
+  Course = "SWEN-514"
+  Team   = "Group-2"
+}
+
+# Required before planning: build the Python 3.13 / Linux x86_64 deployment ZIP
+# with app.py and dependencies at its root, then set its actual location.
+# lambda_zip_path = "../backend/lambda.zip"
+lambda_handler = "app.lambda_handler"
+
+# Required: set the selected Bedrock foundation-model ARN in us-east-1.
+# The model must support direct on-demand invocation in your account.
+# bedrock_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/<model-id>"
