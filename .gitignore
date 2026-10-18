@@ -15,3 +15,6 @@ crash.*.log
 
 # Commit .terraform.lock.hcl once terraform init generates it.
 .DS_Store
+
+# Shared bucket policy contains participant account associations.
+/terraform/shared-state-bucket-policy.json
