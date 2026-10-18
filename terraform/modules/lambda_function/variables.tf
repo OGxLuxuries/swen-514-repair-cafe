@@ -52,13 +52,13 @@ variable "notifications_topic_arn" {
 }
 
 variable "bedrock_model_arn" {
-  description = "ARN of an in-region Bedrock foundation model supporting direct on-demand invocation. Model access must be available in the account."
+  description = "Bedrock foundation-model ARN or system inference-profile ARN, such as the US Sonnet 5.5 profile. Model access must be available in the account."
   type        = string
   nullable    = false
 
   validation {
-    condition     = can(regex("^arn:aws[a-z-]*:bedrock:[a-z0-9-]+::foundation-model/[a-zA-Z0-9.:-]+$", var.bedrock_model_arn))
-    error_message = "Provide a Bedrock foundation-model ARN; inference profiles require a different IAM configuration."
+    condition     = can(regex("^arn:aws[a-z-]*:bedrock:[a-z0-9-]+:(:foundation-model|[0-9]{12}:inference-profile)/[a-zA-Z0-9.:-]+$", var.bedrock_model_arn))
+    error_message = "Provide a Bedrock foundation-model ARN or system inference-profile ARN for the deployment Region and account."
   }
 }
 

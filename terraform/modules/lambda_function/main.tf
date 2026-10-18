@@ -8,6 +8,22 @@ terraform {
 
 locals {
   function_name = "${var.name_prefix}-backend"
+
+  # Cross-region inference needs permission for the profile and every model it
+  # routes to. Look up the actual destination ARNs instead of hardcoding Regions.
+  bedrock_resource_arns = concat(
+    [var.bedrock_model_arn],
+    flatten([
+      for profile in data.aws_bedrock_inference_profile.selected :
+      [for model in profile.models : model.model_arn]
+    ])
+  )
+}
+
+data "aws_bedrock_inference_profile" "selected" {
+  count = strcontains(var.bedrock_model_arn, ":inference-profile/") ? 1 : 0
+
+  inference_profile_id = var.bedrock_model_arn
 }
 
 resource "aws_cloudwatch_log_group" "backend" {
@@ -99,7 +115,7 @@ resource "aws_iam_role_policy" "backend" {
         Sid      = "GenerateHandoffSummary"
         Effect   = "Allow"
         Action   = "bedrock:InvokeModel"
-        Resource = var.bedrock_model_arn
+        Resource = local.bedrock_resource_arns
       }
     ]
   })
