@@ -1,0 +1,234 @@
+name: Repair Cafe terraform_apply and terraform_destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Action to perform
+        required: true
+        type: choice
+        options:
+          - terraform_apply
+          - terraform_destroy
+      environment:
+        description: GitHub environment containing your AWS credentials and state key
+        required: true
+        type: environment
+
+permissions:
+  contents: read
+
+# Queue runs for the same environment instead of interrupting Terraform.
+concurrency:
+  group: terraform-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    name: ${{ inputs.action }} (${{ inputs.environment }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: ${{ inputs.environment }}
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: terraform
+
+    env:
+      ACTION: ${{ inputs.action }}
+      DEPLOY_ENV: ${{ inputs.environment }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      TF_STATE_KEY: ${{ secrets.TF_STATE_KEY }}
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_WORKSPACE: default
+      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+      # GitHub environments select AWS accounts; Terraform's environment stays dev.
+      TF_VAR_environment: dev
+      TF_VAR_bedrock_model_arn: ${{ vars.BEDROCK_MODEL_ARN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check configuration and application files
+        run: |
+          : "${TF_STATE_BUCKET:?Add the TF_STATE_BUCKET repository variable}"
+          : "${TF_STATE_KEY:?Add the TF_STATE_KEY environment secret}"
+          : "${TF_VAR_aws_region:?Add the AWS_REGION repository variable}"
+          : "${TF_VAR_bedrock_model_arn:?Add the BEDROCK_MODEL_ARN environment variable}"
+          if [[ "$TF_STATE_KEY" != "state/$DEPLOY_ENV/terraform.tfstate" ]]; then
+            echo "::error::TF_STATE_KEY must match state/<selected-environment>/terraform.tfstate exactly."
+            exit 1
+          fi
+          if [[ "$ACTION" == "terraform_apply" ]]; then
+            for file in ../backend/app.py ../frontend/index.html ../frontend/error.html; do
+              if [[ ! -f "$file" ]]; then
+                echo "::error::Missing $file. Add the application files before running terraform_apply."
+                exit 1
+              fi
+            done
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Prepare Lambda deployment package
+        run: |
+          export TF_VAR_lambda_zip_path="$RUNNER_TEMP/repair-cafe-backend.zip"
+          if [[ "$ACTION" == "terraform_apply" ]]; then
+            mkdir -p "$RUNNER_TEMP/lambda-package"
+            if [[ -f ../backend/requirements.txt ]]; then
+              python3 -m pip install \
+                --platform manylinux2014_x86_64 \
+                --implementation cp --python-version 3.13 \
+                --only-binary=:all: \
+                --target "$RUNNER_TEMP/lambda-package" \
+                -r ../backend/requirements.txt
+            fi
+            cp -R ../backend/. "$RUNNER_TEMP/lambda-package/"
+          fi
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+
+          with ZipFile(os.environ["TF_VAR_lambda_zip_path"], "w", ZIP_DEFLATED) as archive:
+              if os.environ["ACTION"] == "terraform_apply":
+                  root = Path(os.environ["RUNNER_TEMP"]) / "lambda-package"
+                  for path in sorted(root.rglob("*")):
+                      relative = path.relative_to(root)
+                      if any(part in {"__pycache__", ".venv", "venv", ".git"} for part in relative.parts):
+                          continue
+                      if path.is_file() and not path.name.startswith(".env"):
+                          archive.write(path, relative.as_posix())
+          PY
+          # Destroy still evaluates the ZIP path/hash. Its empty ZIP is never deployed.
+          printf 'TF_VAR_lambda_zip_path=%s\n' "$TF_VAR_lambda_zip_path" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.5"
+          terraform_wrapper: false
+
+      - name: Initialize shared state
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=$TF_STATE_BUCKET" \
+            -backend-config="key=$TF_STATE_KEY" \
+            -backend-config="region=$TF_VAR_aws_region" \
+            -backend-config="workspace_key_prefix=state/$DEPLOY_ENV/workspaces"
+
+      - name: Validate Terraform
+        run: terraform validate
+
+      - name: Plan terraform_apply
+        if: inputs.action == 'terraform_apply'
+        run: terraform plan -lock-timeout=5m -out="$RUNNER_TEMP/setup.tfplan"
+
+      - name: Apply terraform_apply
+        if: inputs.action == 'terraform_apply'
+        run: terraform apply -lock-timeout=5m "$RUNNER_TEMP/setup.tfplan"
+
+      - name: Deploy frontend files and configuration
+        if: inputs.action == 'terraform_apply'
+        run: |
+          bucket=$(terraform output -raw frontend_bucket_name)
+          aws s3 sync ../frontend/ "s3://$bucket/" --delete --only-show-errors
+          terraform output -json > "$RUNNER_TEMP/outputs.json"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          temp = Path(os.environ["RUNNER_TEMP"])
+          outputs = json.loads((temp / "outputs.json").read_text())
+          config = {
+              "apiUrl": outputs["api_url"]["value"],
+              "awsRegion": os.environ["TF_VAR_aws_region"],
+              "cognitoUserPoolId": outputs["cognito_user_pool_id"]["value"],
+              "cognitoClientId": outputs["cognito_client_id"]["value"],
+          }
+          (temp / "config.json").write_text(json.dumps(config, indent=2) + "\n")
+          PY
+          aws s3 cp "$RUNNER_TEMP/config.json" "s3://$bucket/config.json" \
+            --content-type application/json --cache-control no-store --only-show-errors
+
+      - name: Plan terraform_destroy
+        if: inputs.action == 'terraform_destroy'
+        run: terraform plan -destroy -lock-timeout=5m
+
+      - name: Empty application buckets
+        if: inputs.action == 'terraform_destroy'
+        run: |
+          # Read resource addresses so cleanup also works after a partial terraform_apply.
+          terraform show -json > "$RUNNER_TEMP/state.json"
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          state = json.loads((Path(os.environ["RUNNER_TEMP"]) / "state.json").read_text())
+          account = subprocess.check_output(
+              ["aws", "sts", "get-caller-identity", "--query", "Account", "--output", "text"],
+              text=True,
+          ).strip()
+          addresses = {
+              "module.frontend.aws_s3_bucket.frontend",
+              "module.uploads.aws_s3_bucket.uploads",
+          }
+
+          def empty_buckets(module):
+              for resource in module.get("resources", []):
+                  if resource["address"] not in addresses:
+                      continue
+                  bucket = resource["values"]["bucket"]
+                  if bucket == os.environ["TF_STATE_BUCKET"]:
+                      raise RuntimeError("Refusing to empty the shared state bucket")
+                  check = subprocess.run(
+                      ["aws", "s3api", "head-bucket", "--bucket", bucket,
+                       "--expected-bucket-owner", account],
+                      capture_output=True, text=True,
+                  )
+                  if check.returncode:
+                      if "(404)" in check.stderr:
+                          continue
+                      raise RuntimeError(check.stderr)
+                  subprocess.run(
+                      ["aws", "s3", "rm", f"s3://{bucket}/", "--recursive", "--only-show-errors"],
+                      check=True,
+                  )
+              for child in module.get("child_modules", []):
+                  empty_buckets(child)
+
+          empty_buckets(state.get("values", {}).get("root_module", {}))
+          PY
+
+      - name: Destroy application infrastructure
+        if: inputs.action == 'terraform_destroy'
+        run: terraform destroy -auto-approve -lock-timeout=5m
+
+      - name: Report result
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          printf '## Repair Cafe %s\n\nResult: %s\n' "$ACTION" "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$JOB_STATUS" == "success" && "$ACTION" == "terraform_apply" ]]; then
+            website=$(terraform output -raw frontend_website_url)
+            api=$(terraform output -raw api_url)
+            printf '\nWebsite: %s\n\nAPI: %s\n' "$website" "$api" >> "$GITHUB_STEP_SUMMARY"
+          fi
