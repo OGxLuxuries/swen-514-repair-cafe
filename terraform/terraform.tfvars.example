@@ -12,6 +12,8 @@ tags = {
 # lambda_zip_path = "../backend/lambda.zip"
 lambda_handler = "app.lambda_handler"
 
-# Required: set the selected Bedrock foundation-model ARN in us-east-1.
-# The model must support direct on-demand invocation in your account.
-# bedrock_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/<model-id>"
+# Required: use the US Sonnet 5.5 inference-profile ARN for your AWS account.
+# Replace <account-id> with the deploying account's 12-digit ID.
+# The Terraform deployment identity needs bedrock:GetInferenceProfile, and
+# each account must meet Anthropic's model-access requirements.
+# bedrock_model_arn = "arn:aws:bedrock:us-east-1:<account-id>:inference-profile/us.anthropic.claude-sonnet-5-5"
