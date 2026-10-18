@@ -50,7 +50,7 @@ variable "lambda_handler" {
 }
 
 variable "bedrock_model_arn" {
-  description = "Bedrock model or system inference-profile ARN in aws_region. Use the US Sonnet 5.5 inference profile for the deploying AWS account."
+  description = "Bedrock model or system inference-profile ARN in aws_region. Use the US Sonnet 4.6 inference profile for the deploying AWS account."
   type        = string
   nullable    = false
 }

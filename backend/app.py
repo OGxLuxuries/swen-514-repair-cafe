@@ -57,7 +57,7 @@ def _validate_notes(event):
         raise ValueError("Notes and facts must total no more than 12000 characters.")
     return {"volunteer_notes": notes, "confirmed_facts": facts}
 
-# calls Sonnet 5.5 through bedrock, send the notes to the model, extracts response text
+# calls Sonnet 4.6 through bedrock, send the notes to the model, extracts response text
 def _summarize(source):
     model_id = os.environ.get("BEDROCK_MODEL_ID")
     if not model_id:
@@ -70,8 +70,7 @@ def _summarize(source):
             messages=[{"role": "user", "content": [{"text": json.dumps(source)}]}],
             inferenceConfig={"maxTokens": 1024},
             additionalModelRequestFields={
-                "thinking": {"type": "between_tools"},
-                "output_config": {"effort": "low"},
+                "thinking": {"type": "disabled"},
             },
         )
         summary = "\n".join(

@@ -52,7 +52,7 @@ variable "notifications_topic_arn" {
 }
 
 variable "bedrock_model_arn" {
-  description = "Bedrock foundation-model ARN or system inference-profile ARN, such as the US Sonnet 5.5 profile. Model access must be available in the account."
+  description = "Bedrock foundation-model ARN or system inference-profile ARN, such as the US Sonnet 4.6 profile. Model access must be available in the account."
   type        = string
   nullable    = false
 
