@@ -12,6 +12,7 @@ crash.*.log
 .env
 .env.*
 !.env.example
+/.venv
 
 # Commit .terraform.lock.hcl once terraform init generates it.
 .DS_Store

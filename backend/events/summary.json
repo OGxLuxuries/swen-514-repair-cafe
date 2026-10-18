@@ -1,0 +1,13 @@
+{
+  "action": "summarize",
+  "notes": [
+    "The requester reported that some keys on the USB keyboard do not respond.",
+    "I inspected the exterior and recorded the keyboard model from its label.",
+    "No repair has been attempted. A second volunteer will continue the investigation."
+  ],
+  "confirmed_facts": [
+    "Item category: keyboard.",
+    "Current request status: In Progress.",
+    "The requester has not confirmed an outcome."
+  ]
+}
