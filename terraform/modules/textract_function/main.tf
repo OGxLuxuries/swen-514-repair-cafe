@@ -1,11 +1,11 @@
 data "archive_file" "textract_lambda_zip" {
   type        = "zip"
-  source_file = var.source_file
-  output_path = "${path.module}/.terraform/tmp/${var.function_name}.zip"
+  source_file = "${path.module}/../textract/handler.py" # Adjust path to your handler.py
+  output_path = "${path.module}/.terraform/tmp/textract-document-reader.zip"
 }
 
 resource "aws_iam_role" "textract_lambda_role" {
-  name = "${var.function_name}-role"
+  name = "textract-document-reader-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -23,7 +23,7 @@ resource "aws_iam_role_policy_attachment" "textract_lambda_logs" {
 }
 
 resource "aws_iam_role_policy" "textract_only" {
-  name = "${var.function_name}-textract-policy"
+  name = "textract-document-reader-policy"
   role = aws_iam_role.textract_lambda_role.id
 
   policy = jsonencode({
@@ -37,7 +37,7 @@ resource "aws_iam_role_policy" "textract_only" {
 }
 
 resource "aws_lambda_function" "textract" {
-  function_name    = var.function_name
+  function_name    = "textract-document-reader"
   role             = aws_iam_role.textract_lambda_role.arn
   filename         = data.archive_file.textract_lambda_zip.output_path
   source_code_hash = data.archive_file.textract_lambda_zip.output_base64sha256
