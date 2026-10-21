@@ -1,7 +1,7 @@
 data "archive_file" "textract_lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/../textract/handler.py" # Adjust path to your handler.py
-  output_path = "${path.module}/.terraform/tmp/textract-document-reader.zip"
+  source_file = "${path.module}/../../../backend/textract_processor/handler.py"
+  output_path = "${path.module}/textract-document-reader.zip"
 }
 
 resource "aws_iam_role" "textract_lambda_role" {
