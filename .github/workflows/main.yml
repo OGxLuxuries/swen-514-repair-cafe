@@ -109,6 +109,19 @@ jobs:
           # Destroy still evaluates the ZIP path/hash. Its empty ZIP is never deployed.
           printf 'TF_VAR_lambda_zip_path=%s\n' "$TF_VAR_lambda_zip_path" >> "$GITHUB_ENV"
 
+      - name: Set up Node.js
+        if: inputs.action == 'terraform_apply'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build frontend
+        if: inputs.action == 'terraform_apply'
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -146,7 +159,7 @@ jobs:
         if: inputs.action == 'terraform_apply'
         run: |
           bucket=$(terraform output -raw frontend_bucket_name)
-          aws s3 sync ../frontend/ "s3://$bucket/" --delete --only-show-errors
+          aws s3 sync ../frontend/dist/ "s3://$bucket/" --delete --only-show-errors
           terraform output -json > "$RUNNER_TEMP/outputs.json"
           python3 - <<'PY'
           import json
